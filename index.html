@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#0f0f1a" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <title>Your Expenses</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/main.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+
+<!-- SPLASH SCREEN -->
+<div id="splash" class="splash">
+  <div class="splash-logo">
+    <div class="splash-icon"><img src="assets/logo.png" alt="logo" /></div>
+    <h1>Your Expenses</h1>
+    <p>Smart Money Tracking</p>
+  </div>
+  <div class="splash-loader"><div></div><div></div><div></div></div>
+</div>
+
+<!-- APP WRAPPER -->
+<div id="app" class="app hidden">
+
+  <!-- TOP BAR -->
+  <header class="topbar">
+    <div class="topbar-left">
+      <div class="avatar">$</div>
+      <div>
+        <div class="topbar-title">Your Expenses</div>
+        <div class="topbar-sub" id="greeting">Good Morning👋</div>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <button class="icon-btn" onclick="openGoalModal()" title="Set Goal">🎯</button>
+      <button class="icon-btn" onclick="toggleDark()" title="Toggle Dark" id="themeBtn">🌙</button>
+    </div>
+  </header>
+
+  <!-- MAIN CONTENT AREA -->
+  <main class="main-content" id="mainContent">
+
+    <!-- ═══ DASHBOARD SCREEN ═══ -->
+    <section id="screen-dashboard" class="screen active">
+
+      <!-- SUMMARY CARDS -->
+      <div class="section-label">Overview</div>
+      <div class="period-tabs">
+        <button class="ptab active" onclick="setPeriod('daily',this)">Today</button>
+        <button class="ptab" onclick="setPeriod('weekly',this)">Week</button>
+        <button class="ptab" onclick="setPeriod('monthly',this)">Month</button>
+      </div>
+
+      <div class="summary-card">
+        <div class="summary-amount" id="summaryAmount">₹0</div>
+        <div class="summary-label" id="summaryLabel">spent today</div>
+        <div class="summary-sub" id="summarySub"></div>
+      </div>
+
+      <!-- GOAL PROGRESS -->
+      <div id="goalCard" class="goal-card hidden">
+        <div class="goal-header">
+          <span>Monthly Goal</span>
+          <span id="goalPct" class="goal-pct">0%</span>
+        </div>
+        <div class="progress-bar-wrap">
+          <div class="progress-bar" id="goalBar"></div>
+        </div>
+        <div class="goal-footer">
+          <span id="goalSpent">Spent: ₹0</span>
+          <span id="goalTarget">Goal: ₹0</span>
+        </div>
+        <div id="goalWarning" class="goal-warning hidden">⚠️ Overspending alert!</div>
+      </div>
+
+      <!-- STREAK + LEVEL -->
+      <div class="gamify-row">
+        <div class="gamify-card">
+          <div class="gamify-icon">🔥</div>
+          <div class="gamify-value" id="streakVal">0</div>
+          <div class="gamify-label">Day Streak</div>
+        </div>
+        <div class="gamify-card">
+          <div class="gamify-icon" id="levelIcon">🌱</div>
+          <div class="gamify-value" id="levelName">Beginner</div>
+          <div class="gamify-label">Level</div>
+        </div>
+        <div class="gamify-card">
+          <div class="gamify-icon">📊</div>
+          <div class="gamify-value" id="totalTxn">0</div>
+          <div class="gamify-label">Entries</div>
+        </div>
+      </div>
+
+      <!-- PIE CHART -->
+      <div class="section-label">By Category</div>
+      <div class="chart-card">
+        <canvas id="pieChart" height="220"></canvas>
+        <div id="pieEmpty" class="chart-empty">No data yet.<br/>Add your first expense!</div>
+      </div>
+
+      <!-- BAR CHART -->
+      <div class="section-label">Weekly Trend</div>
+      <div class="chart-card">
+        <canvas id="barChart" height="180"></canvas>
+        <div id="barEmpty" class="chart-empty hidden">No data for this week.</div>
+      </div>
+
+      <!-- SMART INSIGHTS -->
+      <div class="section-label">Smart Insights 🧠</div>
+      <div id="insightsList" class="insights-list">
+        <div class="insight-empty">Add expenses to see personalized insights!</div>
+      </div>
+
+      <!-- RECENT EXPENSES -->
+      <div class="section-label" style="margin-top:24px;">Recent Expenses</div>
+      <div id="recentList" class="recent-list">
+        <div class="empty-state">
+          <div class="empty-icon">💸</div>
+          <div>No expenses yet</div>
+          <div class="empty-sub">Tap + to add your first expense</div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ═══ ADD EXPENSE SCREEN ═══ -->
+    <section id="screen-add" class="screen">
+      <div class="add-header">
+        <h2>Add Expense</h2>
+        <p>Track where your money goes</p>
+      </div>
+
+      <div class="form-group">
+        <label>Amount (₹)</label>
+        <div class="amount-input-wrap">
+          <span class="currency-sym">₹</span>
+          <input type="number" id="inputAmount" class="amount-input" placeholder="0.00" inputmode="decimal" min="0" step="0.01" />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Note / Description</label>
+        <input type="text" id="inputNote" class="text-input" placeholder='e.g. "Burger at McDonald\'s"' autocomplete="off" />
+        <div id="autoDetect" class="auto-detect hidden">
+          <span class="auto-tag">Auto-detected:</span>
+          <span id="autoCategory" class="auto-cat"></span>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Category</label>
+        <div class="category-grid" id="categoryGrid">
+          <!-- filled by JS -->
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Date</label>
+        <input type="date" id="inputDate" class="text-input" />
+      </div>
+
+      <button class="btn-primary" onclick="saveExpense()" id="saveBtn">
+        <span>💾 Save Expense</span>
+      </button>
+
+      <!-- Edit mode cancel -->
+      <button class="btn-secondary hidden" id="cancelEditBtn" onclick="cancelEdit()">Cancel Edit</button>
+    </section>
+
+    <!-- ═══ HISTORY SCREEN ═══ -->
+    <section id="screen-history" class="screen">
+      <div class="add-header">
+        <h2>All Expenses</h2>
+        <p>Manage your spending history</p>
+      </div>
+
+      <div class="search-wrap">
+        <input type="text" id="searchInput" class="text-input" placeholder="🔍 Search expenses..." oninput="renderHistory()" />
+      </div>
+
+      <div class="filter-row">
+        <select id="filterCat" class="filter-select" onchange="renderHistory()">
+          <option value="">All Categories</option>
+          <option value="Food">🍔 Food</option>
+          <option value="Travel">🚗 Travel</option>
+          <option value="Shopping">🛍️ Shopping</option>
+          <option value="Bills">💡 Bills</option>
+          <option value="Entertainment">🎬 Entertainment</option>
+          <option value="Others">📦 Others</option>
+        </select>
+        <select id="filterPeriod" class="filter-select" onchange="renderHistory()">
+          <option value="all">All Time</option>
+          <option value="today">Today</option>
+          <option value="week">This Week</option>
+          <option value="month">This Month</option>
+        </select>
+      </div>
+
+      <div id="historyList" class="history-list"></div>
+    </section>
+
+    <!-- ═══ INSIGHTS SCREEN ═══ -->
+    <section id="screen-insights" class="screen">
+      <div class="add-header">
+        <h2>Smart Insights</h2>
+        <p>AI-powered spending analysis</p>
+      </div>
+      <div id="fullInsights" class="insights-list"></div>
+
+      <!-- CATEGORY BREAKDOWN -->
+      <div class="section-label" style="margin-top:24px;">Category Breakdown</div>
+      <div id="catBreakdown" class="cat-breakdown"></div>
+
+      <!-- EXPORT -->
+      <div class="section-label" style="margin-top:24px;">Export & Share</div>
+      <div class="export-row">
+        <button class="btn-export" onclick="exportCSV()">📥 Export CSV</button>
+        <button class="btn-export" onclick="shareInsight()">📤 Share Insight</button>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- BOTTOM NAV -->
+  <nav class="bottom-nav">
+    <button class="nav-item active" onclick="switchScreen('dashboard',this)" data-label="Home">
+      <span class="nav-icon">🏠</span>
+      <span class="nav-label">Home</span>
+    </button>
+    <button class="nav-item" onclick="switchScreen('add',this)" data-label="Add" id="addNavBtn">
+      <span class="nav-icon add-btn-icon">+</span>
+      <span class="nav-label">Add</span>
+    </button>
+    <button class="nav-item" onclick="switchScreen('history',this)" data-label="History">
+      <span class="nav-icon">📋</span>
+      <span class="nav-label">History</span>
+    </button>
+    <button class="nav-item" onclick="switchScreen('insights',this)" data-label="Insights">
+      <span class="nav-icon">🧠</span>
+      <span class="nav-label">Insights</span>
+    </button>
+  </nav>
+
+</div>
+
+<!-- GOAL MODAL -->
+<div id="goalModal" class="modal-overlay hidden" onclick="closeGoalModal(event)">
+  <div class="modal-box">
+    <h3>Set Monthly Goal</h3>
+    <p>How much can you spend this month?</p>
+    <div class="amount-input-wrap">
+      <span class="currency-sym">₹</span>
+      <input type="number" id="goalInput" class="amount-input" placeholder="e.g. 15000" inputmode="decimal" />
+    </div>
+    <div style="height:12px"></div>
+    <button class="btn-primary" onclick="saveGoal()">Save Goal</button>
+    <button class="btn-secondary" onclick="closeGoalModal()">Cancel</button>
+  </div>
+</div>
+
+<!-- DELETE CONFIRM MODAL -->
+<div id="deleteModal" class="modal-overlay hidden" onclick="closeDeleteModal(event)">
+  <div class="modal-box">
+    <div style="font-size:48px;text-align:center">🗑️</div>
+    <h3>Delete Expense?</h3>
+    <p>This action cannot be undone.</p>
+    <button class="btn-danger" onclick="confirmDelete()">Delete</button>
+    <button class="btn-secondary" onclick="closeDeleteModal()">Cancel</button>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast" class="toast hidden"></div>
+
+<!-- AD BANNER PLACEHOLDER -->
+<div id="adBanner" class="ad-banner">
+  <span style="opacity:0.4;font-size:11px;">Advertisement</span>
+</div>
+
+<script src="js/db.js"></script>
+<script src="js/insights.js"></script>
+<script src="js/charts.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
